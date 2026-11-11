@@ -723,6 +723,24 @@
     #beskjed[hidden] {
       display: none;
     }
+
+    #nytt {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      width: 100%;
+      border: 0;
+      cursor: pointer;
+      background: var(--ute);
+      color: var(--flate);
+      padding: 12px 16px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    #nytt[hidden] {
+      display: none;
+    }
   </style>
 </head>
 
@@ -732,6 +750,7 @@
     <a href="#">Utstyr</a>
     <button id="loggut" hidden>Logg ut</button>
   </header>
+  <button id="nytt" hidden>Noen andre har gjort endringer. Trykk her for å oppdatere.</button>
   <main id="app"></main>
   <div id="lag" hidden></div>
   <div id="beskjed" role="status" hidden></div>
@@ -1624,8 +1643,11 @@
 
     // ---------- Ruting ----------
     let visNr_ = 0;
-    async function vis() {
+    // behold = true: oppdatering i bakgrunnen, siden skal ikke hoppe til toppen
+    async function vis(valg) {
+      const behold = !!(valg && valg.behold === true), rulle = window.scrollY;
       const denne = ++visNr_;
+      nyttKnapp.hidden = true;
       lukkLag();
       loggutKnapp.hidden = !okt;
       if (!okt) { visInnlogging(); return; }
@@ -1641,12 +1663,43 @@
         else if (side === 'lost') await visLost();
         else if (side === 'laan') await visLaan(id);
         else await visForside();
-        if (denne === visNr_) window.scrollTo(0, 0);
+        if (denne === visNr_) window.scrollTo(0, behold ? rulle : 0);
       } catch (err) {
         handlinger = {};
         app.innerHTML = `<a class="tilbake" href="#">Alle kit</a><h1>Kunne ikke hente data</h1><p>${esc(feiltekst(err))}</p>`;
       }
     }
+
+    // ---------- Sanntid: endringer fra andre telefoner og PC-er ----------
+    const nyttKnapp = document.getElementById('nytt');
+    let kanal = null, sanntidTid;
+    nyttKnapp.addEventListener('click', () => vis({ behold: true }));
+
+    // Sant når brukeren er midt i noe som en oppdatering ville visket ut
+    function midtINoe() {
+      if (!lag.hidden) return true;
+      if (['inn', 'ut', 'laan'].includes(location.hash.slice(1).split('/')[0])) return true;
+      const felt = [...app.querySelectorAll('input, textarea')];
+      if (felt.some(el => el.type === 'checkbox' ? el.checked !== el.defaultChecked : el.value !== el.defaultValue)) return true;
+      return [...app.querySelectorAll('select')].some(sel => [...sel.options].some(o => o.selected !== o.defaultSelected));
+    }
+    function vedEndring() {
+      clearTimeout(sanntidTid);
+      sanntidTid = setTimeout(() => {
+        if (!okt) return;
+        if (midtINoe()) nyttKnapp.hidden = false;      // ikke forstyrr: la brukeren oppdatere selv
+        else vis({ behold: true });
+      }, 500);
+    }
+    function kobleSanntid() {
+      if (kanal || !sb.channel) return;
+      kanal = sb.channel('utstyr').on('postgres_changes', { event: '*', schema: 'public' }, vedEndring).subscribe();
+    }
+    function koblFraSanntid() {
+      if (kanal) { sb.removeChannel(kanal); kanal = null; }
+    }
+    // Når telefonen eller fanen har vært i bakgrunnen kan endringer ha gått tapt: hent på nytt
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && okt) vedEndring(); });
 
     function start() {
       if (SUPABASE_URL.includes('DITT-PROSJEKT') || SUPABASE_KEY.includes('LIM-INN')) {
@@ -1663,7 +1716,10 @@
         okt = s;
         const bruker = s ? s.user.id : null;
         // Ikke tegn på nytt ved fornyet token. setTimeout: Supabase tåler ikke databasekall inne i denne funksjonen.
-        if (bruker !== forrigeBruker) { forrigeBruker = bruker; setTimeout(vis, 0); }
+        if (bruker !== forrigeBruker) {
+          forrigeBruker = bruker;
+          setTimeout(() => { if (bruker) kobleSanntid(); else koblFraSanntid(); vis(); }, 0);
+        }
       });
       window.addEventListener('hashchange', vis);
     }

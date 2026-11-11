@@ -391,6 +391,64 @@
       flex: 1;
     }
 
+    label.kryss {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 400;
+    }
+
+    label.kryss input {
+      width: 22px;
+      height: 22px;
+      min-height: 0;
+      margin: 0;
+      flex: none;
+    }
+
+    .malrad {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .malrad b {
+      min-width: 28px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .malrad .mini {
+      min-width: 40px;
+    }
+
+    .malrad .fjern {
+      margin-left: auto;
+      color: var(--mangler);
+    }
+
+    .lenkerad {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 0;
+      border-top: 1px solid var(--strek);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .lenkerad:first-child {
+      border-top: 0;
+    }
+
+    .boksen {
+      background: var(--flate);
+      border-radius: 12px;
+      padding: 16px 14px 4px;
+    }
+
     .varsel {
       background: var(--defekt-bg);
       color: var(--defekt);
@@ -858,19 +916,96 @@
 
     // ---------- Forside: alle kit ----------
     async function visForside() {
-      const kit = await db(sb.from('kit_oversikt').select('*').order('navn'));
+      const [kit, lost, enkeltlaan] = await Promise.all([
+        db(sb.from('kit_oversikt').select('*').order('navn')),
+        db(sb.from('enhet').select('id').is('kit_id', null)),
+        db(sb.from('utlaan').select('*').is('kit_id', null).is('inn_tid', null).order('ut_tid'))
+      ]);
+      const ute = enkeltlaan.length
+        ? await db(sb.from('enhet').select('id, merke_nummer, sim_nummer, utlaan_id, utstyrstype(navn)').in('utlaan_id', enkeltlaan.map(u => u.id)))
+        : [];
       app.innerHTML = `
     <button class="knapp hoved stor" data-h="skann">Skann eller tast nummer</button>
+    <label style="margin:14px 0 0">Søk i utstyret
+      <input id="sok" type="search" autocomplete="off" placeholder="Nummer, navn, serienummer eller kit"></label>
+    <div id="sokresultat"></div>
+    <div class="knapper"><a class="knapp" href="#laan">Lån ut enkeltutstyr</a></div>
+    ${enkeltlaan.length ? `<h2>Utlånt enkeltvis</h2>${enkeltlaan.map(u => {
+        const mine = ute.filter(e => e.utlaan_id === u.id);
+        return `<div class="gruppe" style="margin-bottom:10px">
+        <div class="linje"><div class="linje-topp"><span><b>${esc(u.person)}</b>${u.oppdrag ? ', ' + esc(u.oppdrag) : ''}</span>
+          <span class="antall">siden ${dato(u.ut_tid)}${u.forventet_inn ? ', ventes ' + dato(u.forventet_inn) : ''}</span></div></div>
+        ${mine.map(e => `<a class="lenkerad" href="#enhet/${e.id}"><span>${esc(e.utstyrstype.navn)}</span><span class="merke utlaant">${esc(visNr(e))}</span></a>`).join('')}
+        <div class="linje"><button class="legg-til" data-h="innalt" data-id="${u.id}">Lever inn alt fra ${esc(u.person)}</button></div>
+      </div>`;
+      }).join('')}` : ''}
     <h2>Kit</h2>
     ${kit.length ? '' : '<p>Ingen kit er lagt inn ennå.</p>'}
     <ul class="liste">${kit.map(k => `
       <li><a class="kitrad" href="#kit/${k.id}">
         <b>${esc(k.navn)}</b>
         <span class="status ${k.utlaant_til ? 'ute' : 'inne'}">${k.utlaant_til ? 'Ute hos ' + esc(k.utlaant_til) : 'Inne'}</span>
-        <span class="sub">${k.registrert} av ${k.forventet} registrert${k.mangler > 0 ? `, ${k.mangler} mangler` : ''}${k.defekt > 0 ? `, ${k.defekt} defekt` : ''}</span>
+        <span class="sub">${k.registrert} av ${k.forventet} registrert${k.mangler > 0 ? `, ${k.mangler} mangler` : ''}${k.defekt > 0 ? `, ${k.defekt} defekt` : ''}${k.utlaant_enkeltvis > 0 ? `, ${k.utlaant_enkeltvis} lånt ut enkeltvis` : ''}</span>
       </a></li>`).join('')}
-    </ul>`;
-      handlinger = { skann: () => aapneSkanner({ tittel: 'Finn utstyr', vedKode: finnOgVis }) };
+    </ul>
+    <h2>Mer</h2>
+    <div class="gruppe">
+      <a class="lenkerad" href="#lost"><span>Løst utstyr</span><span class="sub">${lost.length} registrert</span></a>
+      <a class="lenkerad" href="#admin"><span>Administrer kit og utstyr</span></a>
+    </div>`;
+      // ----- Søk: henter alt utstyr første gang det skrives, og filtrerer mens du skriver -----
+      const sokefelt = document.getElementById('sok'), resultat = document.getElementById('sokresultat');
+      let alt = null, henter = null;
+      async function hentAlt() {
+        const [enheter, aktive] = await Promise.all([
+          db(sb.from('enhet').select('*, utstyrstype(navn, kategori), kit(navn)').order('merke_nummer').limit(5000)),
+          db(sb.from('utlaan').select('id, person').is('inn_tid', null))
+        ]);
+        const hos = Object.fromEntries(aktive.map(u => [u.id, u.person]));
+        return enheter.map(e => ({
+          e, person: e.status === 'utlaant' ? hos[e.utlaan_id] : null,
+          tekst: [e.merke_nummer, e.sim_nummer, e.serienummer, e.utstyrstype.navn, e.utstyrstype.kategori,
+          e.kit ? e.kit.navn : 'løst utstyr', e.merknad].filter(Boolean).join(' ').toLowerCase()
+        }));
+      }
+      async function sok() {
+        const ord = sokefelt.value.toLowerCase().trim().split(/\s+/).filter(Boolean);
+        const kortTall = ord.length === 1 && /^\d+$/.test(ord[0]);
+        if (!ord.length || (!kortTall && ord.join('').length < 2)) { resultat.innerHTML = ''; return; }
+        try {
+          if (!alt) { henter = henter || hentAlt(); alt = await henter; }
+        } catch (err) { henter = null; resultat.innerHTML = `<p>${esc(feiltekst(err))}</p>`; return; }
+        if (sokefelt.value.toLowerCase().trim().split(/\s+/).filter(Boolean).join(' ') !== ord.join(' ')) return;   // nyere søk er på vei
+        const treff = alt.filter(r => ord.every(o => r.tekst.includes(o)));
+        if (kortTall) {   // treff på selve merkenummeret først: «35» skal gi 00035 før «CX 350»
+          const rang = r => r.e.merke_nummer === normKode(ord[0]) ? 0 : (r.e.merke_nummer || '').includes(ord[0]) ? 1 : 2;
+          treff.sort((x, y) => rang(x) - rang(y));
+        }
+        resultat.innerHTML = treff.length ? `
+      <p class="sub" style="margin:10px 0 6px">${treff.length > 50 ? 'Viser 50 av ' + treff.length + ' treff. Skriv mer for å snevre inn.' : treff.length + ' treff'}</p>
+      <div class="gruppe">${treff.slice(0, 50).map(({ e, person }) => `
+        <a class="lenkerad" href="#enhet/${e.id}">
+          <span>${esc(e.utstyrstype.navn)}
+            <span class="sub" style="display:block">${e.kit ? esc(e.kit.navn) : 'Løst utstyr'}, ${person ? 'ute hos ' + esc(person) : STATUS[e.status].toLowerCase()}${e.serienummer ? ', serienr. ' + esc(e.serienummer) : ''}</span></span>
+          <span class="merke ${e.status}">${esc(visNr(e))}</span>
+        </a>`).join('')}</div>`
+          : '<p style="margin:10px 0 0">Ingen treff. Søket går bare i utstyr som er registrert med nummer.</p>';
+      }
+      let sokTid;
+      sokefelt.addEventListener('input', () => { clearTimeout(sokTid); sokTid = setTimeout(sok, 150); });
+
+      handlinger = {
+        skann: () => aapneSkanner({ tittel: 'Finn utstyr', vedKode: finnOgVis }),
+        innalt: async el => {
+          const u = enkeltlaan.find(x => x.id === el.dataset.id), mine = ute.filter(e => e.utlaan_id === u.id);
+          if (!confirm(`Levere inn alt (${mine.length} stk) fra ${u.person} som i orden?`)) return;
+          try {
+            for (const e of mine) await db(sb.rpc('lever_inn_enhet', { p_enhet_id: e.id }));
+            beskjed(`Alt fra ${u.person} er levert inn.`);
+          } catch (err) { beskjed(feiltekst(err)); }
+          vis();
+        }
+      };
     }
 
     // ---------- Kit: fasit og registrering ----------
@@ -901,7 +1036,10 @@
       ${kit.utlaant_til
           ? `<a class="knapp hoved" href="#inn/${id}">Lever inn</a>`
           : `<a class="knapp hoved" href="#ut/${id}">Lever ut</a>`}
+      <a class="knapp" href="#logg/${id}">Utlånslogg</a>
+      <a class="knapp" href="#mal/${id}">Endre innhold</a>
     </div>
+    ${kit.utlaant_enkeltvis > 0 ? `<div class="varsel">${kit.utlaant_enkeltvis == 1 ? '1 enhet' : kit.utlaant_enkeltvis + ' enheter'} fra kitet er lånt ut enkeltvis og ligger ikke i kitet nå.</div>` : ''}
     ${ureg > 0 ? `<div class="varsel">${ureg} av ${kit.forventet} enheter er ikke registrert ennå. Trykk «Registrer» på linjen, og skann merket du har klistret på.</div>` : ''}
     ${grupper.map(g => `
       <h2>${esc(g.navn)}</h2>
@@ -981,6 +1119,7 @@
       if (ureg > 0) avvik.push(`${ureg} enheter er ikke registrert`);
       if (kit.mangler > 0) avvik.push(`${kit.mangler} mangler`);
       if (kit.defekt > 0) avvik.push(`${kit.defekt} er defekt`);
+      if (kit.utlaant_enkeltvis > 0) avvik.push(`${kit.utlaant_enkeltvis} er lånt ut enkeltvis og blir ikke med`);
       app.innerHTML = `
     <a class="tilbake" href="#kit/${id}">${esc(kit.navn)}</a>
     <h1>Lever ut ${esc(kit.navn)}</h1>
@@ -1014,6 +1153,9 @@
         db(sb.from('enhet').select('*, utstyrstype(navn, kategori)').eq('kit_id', id).in('status', ['utlaant', 'mangler']))
       ]);
       if (!laan) { ga('kit/' + id); return; }
+      const alle = enheter.slice();
+      enheter.length = 0;
+      enheter.push(...alle.filter(e => e.status === 'mangler' || e.utlaan_id === laan.id));
       const rekke = Object.fromEntries(mal.map(m => [m.utstyrstype_id, m.sortering]));
       enheter.sort((a, b) => (rekke[a.utstyrstype_id] ?? 999) - (rekke[b.utstyrstype_id] ?? 999));
       const valg = {};   // enhet-id -> 'funnet' | 'defekt'
@@ -1082,15 +1224,16 @@
         db(sb.from('hendelse').select('*').eq('enhet_id', id).order('tid', { ascending: false }).limit(20)),
         db(sb.from('kit').select('id, navn').order('navn')),
         e.forelder_enhet_id ? db(sb.from('enhet').select('id, merke_nummer, utstyrstype(navn)').eq('id', e.forelder_enhet_id).single()) : null,
-        e.kit_id ? db(sb.from('utlaan').select('id, person').eq('kit_id', e.kit_id).is('inn_tid', null).maybeSingle()) : null
+        e.utlaan_id ? db(sb.from('utlaan').select('id, person, oppdrag, kit_id').eq('id', e.utlaan_id).maybeSingle()) : null
       ]);
       const avvik = e.status === 'mangler' || e.status === 'defekt';
+      const enkeltLaan = e.status === 'utlaant' && laan && !laan.kit_id;   // lånt ut alene, ikke som del av et kit
       app.innerHTML = `
-    <a class="tilbake" href="${e.kit ? '#kit/' + e.kit.id : '#'}">${e.kit ? esc(e.kit.navn) : 'Alle kit'}</a>
+    <a class="tilbake" href="${e.kit ? '#kit/' + e.kit.id : '#lost'}">${e.kit ? esc(e.kit.navn) : 'Løst utstyr'}</a>
     <p>${e.merke_nummer ? `<span class="merke stort">${esc(e.merke_nummer)}</span>` : ''}</p>
     <h1>${esc(e.utstyrstype.navn)}</h1>
     <p><span class="status ${e.status}">${STATUS[e.status]}</span>
-      ${e.status === 'utlaant' && laan ? `<span class="sub">hos ${esc(laan.person)}</span>` : ''}</p>
+      ${e.status === 'utlaant' && laan ? `<span class="sub">hos ${esc(laan.person)}${laan.kit_id ? ', sammen med kitet' : ', lånt enkeltvis'}${laan.oppdrag ? ' (' + esc(laan.oppdrag) + ')' : ''}</span>` : ''}</p>
     <dl>
       <dt>Kit</dt><dd>${e.kit ? `<a href="#kit/${e.kit.id}">${esc(e.kit.navn)}</a>` : 'Løst utstyr'}</dd>
       <dt>Kategori</dt><dd>${esc(e.utstyrstype.kategori)}</dd>
@@ -1100,6 +1243,8 @@
       ${simkort.length ? `<dt>SIM-kort</dt><dd>${simkort.map(s => `<a href="#enhet/${s.id}">${esc(s.sim_nummer)}</a>`).join('<br>')}</dd>` : ''}
     </dl>
     <div class="knapper">
+      ${e.status === 'tilgjengelig' && !e.utstyrstype.er_kolli ? `<a class="knapp hoved" href="#laan/${id}">Lån ut</a>` : ''}
+      ${enkeltLaan ? '<button class="knapp hoved" data-h="levinn">Lever inn</button>' : ''}
       ${avvik ? '<button class="knapp hoved" data-h="iorden">Sett som i orden</button>' : ''}
       ${e.status !== 'defekt' ? '<button class="knapp fare" data-h="defekt">Meld defekt</button>' : ''}
       ${e.status !== 'mangler' ? '<button class="knapp fare" data-h="mangler">Meld som mangler</button>' : ''}
@@ -1123,15 +1268,26 @@
         const kommentar = prompt('Kommentar (valgfritt)');
         if (kommentar === null) return;
         try {
-          await db(sb.from('enhet').update({ status }).eq('id', id));
-          await db(sb.from('hendelse').insert({ enhet_id: id, kit_id: e.kit_id, type, kommentar: kommentar.trim() || null }));
+          if (enkeltLaan) {
+            // Meldt defekt eller mangler mens det er lånt ut enkeltvis: utlånet avsluttes for denne enheten
+            await db(sb.rpc('lever_inn_enhet', { p_enhet_id: id, p_status: status, p_kommentar: kommentar.trim() || null }));
+          } else {
+            await db(sb.from('enhet').update(status === 'tilgjengelig' ? { status, utlaan_id: null } : { status }).eq('id', id));
+            await db(sb.from('hendelse').insert({ enhet_id: id, kit_id: e.kit_id, type, kommentar: kommentar.trim() || null }));
+          }
           vis();
         } catch (err) { beskjed(feiltekst(err)); }
       }
       handlinger = {
         defekt: () => settStatus('defekt', 'defekt'),
         mangler: () => settStatus('mangler', 'mangler'),
-        iorden: () => settStatus(laan ? 'utlaant' : 'tilgjengelig', e.status === 'defekt' ? 'reparert' : 'funnet'),
+        iorden: () => settStatus('tilgjengelig', e.status === 'defekt' ? 'reparert' : 'funnet'),
+        levinn: async () => {
+          try {
+            await db(sb.rpc('lever_inn_enhet', { p_enhet_id: id }));
+            beskjed(`${e.utstyrstype.navn} er levert inn.`); vis();
+          } catch (err) { beskjed(feiltekst(err)); }
+        },
         kommentar: async () => {
           const k = prompt('Kommentar');
           if (!k || !k.trim()) return;
@@ -1164,6 +1320,308 @@
       };
     }
 
+    // ---------- Velge eller opprette type utstyr (brukes i kitinnhold og løst utstyr) ----------
+    function typeVelgerHtml(typer, { medKolli } = {}) {
+      const kategorier = [...new Set(typer.map(t => t.kategori))].sort((a, b) => a.localeCompare(b, 'nb'));
+      return `
+    <label>Utstyr
+      <select name="type" required>
+        <option value="">Velg utstyr</option>
+        ${kategorier.map(k => `<optgroup label="${esc(k)}">${typer.filter(t => t.kategori === k)
+        .sort((a, b) => a.navn.localeCompare(b.navn, 'nb'))
+        .map(t => `<option value="${t.id}">${esc(t.navn)}</option>`).join('')}</optgroup>`).join('')}
+        <option value="ny">Ny type utstyr (finnes ikke i listen)</option>
+      </select></label>
+    <div data-ny hidden>
+      <label>Kategori
+        <input name="kategori" list="kategorier" autocomplete="off" placeholder="F.eks. Lyd"></label>
+      <datalist id="kategorier">${kategorier.map(k => `<option value="${esc(k)}">`).join('')}</datalist>
+      <label>Navn <input name="navn" autocomplete="off" placeholder="F.eks. Trådløs mikrofon"></label>
+      <label>Identifiseres med
+        <select name="ident"><option value="merke">Merke med nummer</option><option value="sim">SIM-nummer</option></select></label>
+      <label class="kryss"><input type="checkbox" name="tusj"> Merkes for hånd med tusj</label>
+      ${medKolli ? '<label class="kryss"><input type="checkbox" name="kolli"> Er et kolli (koffert eller bag som åpner hele kitet)</label>' : ''}
+    </div>`;
+    }
+    function koblTypeVelger(f) {
+      f.type.addEventListener('change', () => { f.querySelector('[data-ny]').hidden = f.type.value !== 'ny'; });
+    }
+    // Returnerer valgt type. Oppretter den først hvis brukeren valgte «Ny type». null = stoppet med beskjed.
+    async function hentValgtType(f, typer) {
+      if (f.type.value !== 'ny') return typer.find(t => t.id === f.type.value) || null;
+      const kategori = f.kategori.value.trim(), navn = f.navn.value.trim();
+      if (!kategori || !navn) { beskjed('Fyll ut kategori og navn for den nye typen.'); return null; }
+      try {
+        return await db(sb.from('utstyrstype').insert({
+          kategori, navn, identifisering: f.ident.value,
+          manuell_merking: f.tusj.checked, er_kolli: f.kolli ? f.kolli.checked : false
+        }).select('*').single());
+      } catch (err) {
+        beskjed(err.code === '23505' ? `«${navn}» finnes allerede i kategorien ${kategori}. Velg den i listen.` : feiltekst(err));
+        return null;
+      }
+    }
+
+    // ---------- Administrasjon ----------
+    async function visAdmin() {
+      const kit = await db(sb.from('kit').select('id, navn').order('navn'));
+      app.innerHTML = `
+    <a class="tilbake" href="#">Alle kit</a>
+    <h1>Administrer</h1>
+    <h2>Opprett nytt kit</h2>
+    <form id="nyttkit" class="boksen">
+      <label>Navn på kitet <input name="navn" autocomplete="off" required placeholder="F.eks. VD KIT 3"></label>
+      <label>Merknad (valgfritt) <input name="merknad" autocomplete="off" placeholder="F.eks. 2 kolli: Pelicase + Stativbag"></label>
+      <label>Innhold
+        <select name="kopi"><option value="">Start med tomt kit</option>
+          ${kit.map(k => `<option value="${k.id}">Kopier innholdet fra ${esc(k.navn)}</option>`).join('')}
+        </select></label>
+      <p><button class="knapp hoved">Opprett kit</button></p>
+    </form>
+    <h2>Endre innholdet i et kit</h2>
+    <div class="gruppe">${kit.map(k => `<a class="lenkerad" href="#mal/${k.id}"><span>${esc(k.navn)}</span><span class="sub">Endre innhold</span></a>`).join('') || '<p style="padding:14px 0">Ingen kit ennå.</p>'}</div>
+    <h2>Utlånslogg</h2>
+    <div class="gruppe">${kit.map(k => `<a class="lenkerad" href="#logg/${k.id}"><span>${esc(k.navn)}</span><span class="sub">Se logg</span></a>`).join('') || '<p style="padding:14px 0">Ingen kit ennå.</p>'}</div>
+    <div class="gruppe" style="margin-top:10px"><a class="lenkerad" href="#logg/enkelt"><span>Enkeltutstyr</span><span class="sub">Se logg</span></a></div>
+    <h2>Utstyr uten kit</h2>
+    <div class="gruppe"><a class="lenkerad" href="#lost"><span>Løst utstyr</span><span class="sub">Se og registrer</span></a></div>`;
+      handlinger = {};
+      const f = document.getElementById('nyttkit');
+      f.addEventListener('submit', async e => {
+        e.preventDefault();
+        const navn = f.navn.value.trim();
+        try {
+          const nytt = await db(sb.from('kit').insert({ navn, merknad: f.merknad.value.trim() || null }).select('id').single());
+          if (f.kopi.value) {
+            const linjer = await db(sb.from('kit_mal').select('utstyrstype_id, antall, sortering').eq('kit_id', f.kopi.value));
+            if (linjer.length) await db(sb.from('kit_mal').insert(linjer.map(l => ({ ...l, kit_id: nytt.id }))));
+          }
+          beskjed(`${navn} er opprettet.`); ga('mal/' + nytt.id);
+        } catch (err) { beskjed(err.code === '23505' ? `Det finnes allerede et kit som heter ${navn}.` : feiltekst(err)); }
+      });
+    }
+
+    // ---------- Innholdet (fasiten) i et kit ----------
+    async function visMal(id) {
+      const [kit, mal, typer, enheter] = await Promise.all([
+        db(sb.from('kit').select('id, navn').eq('id', id).single()),
+        db(sb.from('kit_mal').select('id, antall, sortering, utstyrstype(id, navn, kategori)').eq('kit_id', id).order('sortering')),
+        db(sb.from('utstyrstype').select('*')),
+        db(sb.from('enhet').select('utstyrstype_id').eq('kit_id', id))
+      ]);
+      const brukt = new Set(mal.map(m => m.utstyrstype.id));
+      const ledige = typer.filter(t => !brukt.has(t.id));
+      const grupper = [];
+      for (const m of mal) {
+        let g = grupper.find(x => x.navn === m.utstyrstype.kategori);
+        if (!g) grupper.push(g = { navn: m.utstyrstype.kategori, linjer: [] });
+        g.linjer.push(m);
+      }
+      const reg = t => enheter.filter(e => e.utstyrstype_id === t).length;
+      app.innerHTML = `
+    <a class="tilbake" href="#kit/${id}">${esc(kit.navn)}</a>
+    <h1>Innhold i ${esc(kit.navn)}</h1>
+    <p class="sub">Dette er listen over hva som skal være i kitet. Selve utstyret registrerer du på kitsiden.</p>
+    <h2>Legg til linje</h2>
+    <form id="nylinje" class="boksen">
+      ${typeVelgerHtml(ledige, { medKolli: true })}
+      <label>Antall <input name="antall" type="number" inputmode="numeric" min="1" value="1" required></label>
+      <p><button class="knapp hoved">Legg til</button></p>
+    </form>
+    ${mal.length ? '' : '<p style="margin-top:20px">Kitet har ingen linjer ennå.</p>'}
+    ${grupper.map(g => `
+      <h2>${esc(g.navn)}</h2>
+      <div class="gruppe">${g.linjer.map(m => `
+        <div class="linje">
+          <div class="linje-topp"><span>${esc(m.utstyrstype.navn)}</span><span class="antall">${reg(m.utstyrstype.id)} registrert</span></div>
+          <div class="malrad">
+            <button class="mini" data-h="minus" data-id="${m.id}" aria-label="Færre" ${m.antall <= 1 ? 'disabled' : ''}>−</button>
+            <b>${m.antall}</b>
+            <button class="mini" data-h="pluss" data-id="${m.id}" aria-label="Flere">+</button>
+            <button class="mini fjern" data-h="fjern" data-id="${m.id}">Fjern linje</button>
+          </div>
+        </div>`).join('')}</div>`).join('')}`;
+
+      const f = document.getElementById('nylinje');
+      koblTypeVelger(f);
+      f.addEventListener('submit', async e => {
+        e.preventDefault();
+        const antall = parseInt(f.antall.value, 10);
+        if (!(antall >= 1)) { beskjed('Antall må være 1 eller mer.'); return; }
+        const t = await hentValgtType(f, ledige);
+        if (!t) return;
+        try {
+          const neste = mal.reduce((a, m) => Math.max(a, m.sortering), 0) + 1;
+          await db(sb.from('kit_mal').insert({ kit_id: id, utstyrstype_id: t.id, antall, sortering: neste }));
+          beskjed(`${t.navn} er lagt til i ${kit.navn}.`); vis();
+        } catch (err) { beskjed(feiltekst(err)); }
+      });
+      async function endre(el, delta) {
+        const m = mal.find(x => x.id === el.dataset.id);
+        try { await db(sb.from('kit_mal').update({ antall: m.antall + delta }).eq('id', m.id)); vis(); }
+        catch (err) { beskjed(feiltekst(err)); }
+      }
+      handlinger = {
+        pluss: el => endre(el, 1),
+        minus: el => endre(el, -1),
+        fjern: async el => {
+          const m = mal.find(x => x.id === el.dataset.id), n = reg(m.utstyrstype.id);
+          const ekstra = n ? ` ${n} registrerte enheter blir liggende i kitet utenfor listen til du flytter dem.` : '';
+          if (!confirm(`Fjerne ${m.utstyrstype.navn} fra innholdet i ${kit.navn}?${ekstra}`)) return;
+          try { await db(sb.from('kit_mal').delete().eq('id', m.id)); vis(); }
+          catch (err) { beskjed(feiltekst(err)); }
+        }
+      };
+    }
+
+    // ---------- Utlånslogg for et kit ----------
+    async function visLogg(id) {
+      const enkelt = id === 'enkelt';
+      const kit = enkelt ? null : await db(sb.from('kit').select('id, navn').eq('id', id).single());
+      let sporring = sb.from('utlaan').select('*').order('ut_tid', { ascending: false }).limit(100);
+      sporring = enkelt ? sporring.is('kit_id', null) : sporring.eq('kit_id', id);
+      const laan = await db(sporring);
+      // Kit: bare avvik. Enkeltutlån: også hva som ble lånt.
+      const hendelser = laan.length ? await db(sb.from('hendelse')
+        .select('utlaan_id, type, enhet(merke_nummer, sim_nummer, utstyrstype(navn))')
+        .in('utlaan_id', laan.map(u => u.id))
+        .in('type', enkelt ? ['utlevert', 'mangler', 'defekt'] : ['mangler', 'defekt'])) : [];
+      const liste = (u, type) => hendelser.filter(h => h.utlaan_id === u.id && h.type === type && h.enhet)
+        .map(h => `${esc(h.enhet.utstyrstype.navn)} (${esc(visNr(h.enhet))})`);
+      const tittel = enkelt ? 'Utlånslogg for enkeltutstyr' : `Utlånslogg for ${esc(kit.navn)}`;
+      app.innerHTML = `
+    <a class="tilbake" href="${enkelt ? '#admin' : '#kit/' + id}">${enkelt ? 'Administrer' : esc(kit.navn)}</a>
+    <h1>${tittel}</h1>
+    ${laan.length ? '' : `<p>${enkelt ? 'Ingen enkeltutstyr har vært lånt ut ennå.' : 'Kitet har ikke vært levert ut ennå.'}</p>`}
+    <ul class="logg gruppe">${laan.map(u => {
+        const l = liste(u, 'utlevert'), m = liste(u, 'mangler'), d = liste(u, 'defekt');
+        return `<li>
+        <b>${esc(u.person)}</b> ${u.inn_tid ? '' : '<span class="status ute">Ute nå</span>'}
+        <div>${u.oppdrag ? esc(u.oppdrag) : '<span class="sub">Ikke oppgitt oppdrag</span>'}</div>
+        ${l.length ? `<div>${l.join(', ')}</div>` : ''}
+        <div class="sub">Ut ${datoTid(u.ut_tid)}${u.utlevert_av ? ' av ' + esc(u.utlevert_av) : ''}</div>
+        <div class="sub">${u.inn_tid ? 'Inn ' + datoTid(u.inn_tid) : (u.forventet_inn ? 'Ventes inn ' + dato(u.forventet_inn) : 'Ikke levert inn')}</div>
+        ${m.length ? `<div><span class="status mangler">Manglet</span> ${m.join(', ')}</div>` : ''}
+        ${d.length ? `<div><span class="status defekt">Defekt</span> ${d.join(', ')}</div>` : ''}
+        ${u.kommentar ? `<div>Kommentar: ${esc(u.kommentar)}</div>` : ''}
+      </li>`;
+      }).join('')}</ul>`;
+      handlinger = {};
+    }
+
+    // ---------- Lån ut enkeltutstyr (løst eller fra et kit) ----------
+    async function visLaan(forvalgtId) {
+      const valgte = [];   // { id, navn, nr, kit }
+      async function hent(felt, verdi) {
+        const e = await db(sb.from('enhet').select('id, status, merke_nummer, sim_nummer, utstyrstype(navn, er_kolli), kit(navn)').eq(felt, verdi).maybeSingle());
+        return e;
+      }
+      function leggTil(e) {
+        if (!e) return { ok: false, tekst: 'Fant ikke utstyret' };
+        const navn = e.utstyrstype.navn, nr = visNr(e);
+        if (e.utstyrstype.er_kolli) return { ok: false, tekst: `${navn} er et kolli. Lever ut hele kitet fra kitsiden.` };
+        if (valgte.some(v => v.id === e.id)) return { ok: true, tekst: `${navn} ${nr} er allerede lagt til` };
+        if (e.status !== 'tilgjengelig') return { ok: false, tekst: `${navn} ${nr} kan ikke lånes ut (${STATUS[e.status].toLowerCase()})` };
+        valgte.push({ id: e.id, navn, nr, kit: e.kit ? e.kit.navn : null });
+        tegn();
+        return { ok: true, tekst: `${navn} ${nr}` };
+      }
+      app.innerHTML = `
+    <a class="tilbake" href="#">Alle kit</a>
+    <h1>Lån ut enkeltutstyr</h1>
+    <p class="sub">For utstyr som lånes ut alene, enten det er løst eller hører til et kit. Skann alt personen skal ha med.</p>
+    <h2>Utstyr</h2>
+    <div class="gruppe" id="valgte"></div>
+    <div class="knapper"><button class="knapp" data-h="skann">Skann eller tast utstyr</button></div>
+    <form id="laan">
+      <label>Hvem låner? <input name="person" autocomplete="off" required></label>
+      <label>Oppdrag (valgfritt) <input name="oppdrag" autocomplete="off"></label>
+      <label>Ventes inn (valgfritt) <input name="inn" type="date"></label>
+      <button class="knapp hoved stor">Lån ut</button>
+    </form>`;
+      function tegn() {
+        document.getElementById('valgte').innerHTML = valgte.map(v => `
+      <div class="sjekk">
+        <div class="sjekk-hoved" style="cursor:default"><span><b>${esc(v.navn)}</b>
+          <span class="sub">${esc(v.nr)}${v.kit ? ', fra ' + esc(v.kit) : ', løst utstyr'}</span></span></div>
+        <button class="mini" data-h="fjern" data-id="${v.id}">Fjern</button>
+      </div>`).join('') || '<p style="padding:14px 0">Ingenting er lagt til ennå.</p>';
+      }
+      tegn();
+      if (forvalgtId) { const svar = leggTil(await hent('id', forvalgtId)); if (!svar.ok) beskjed(svar.tekst); }
+
+      handlinger = {
+        fjern: el => { const i = valgte.findIndex(v => v.id === el.dataset.id); if (i >= 0) valgte.splice(i, 1); tegn(); },
+        skann: () => aapneSkanner({
+          tittel: 'Skann utstyret', fortlopende: true,
+          vedKode: async kode => {
+            try {
+              const treff = await db(sb.rpc('finn_enhet', { p_kode: kode }));
+              if (!treff.length) return { ok: false, tekst: `${kode} er ikke registrert` };
+              return leggTil(await hent('id', treff[0].id));
+            } catch (err) { return { ok: false, tekst: feiltekst(err) }; }
+          }
+        })
+      };
+      const f = document.getElementById('laan');
+      f.addEventListener('submit', async ev => {
+        ev.preventDefault();
+        if (!valgte.length) { beskjed('Legg til utstyr før du låner ut.'); return; }
+        const person = f.person.value.trim();
+        try {
+          await db(sb.rpc('laan_ut_enheter', {
+            p_enhet_ids: valgte.map(v => v.id), p_person: person, p_oppdrag: f.oppdrag.value.trim() || null,
+            p_forventet_inn: f.inn.value ? new Date(f.inn.value + 'T23:59:00').toISOString() : null
+          }));
+          beskjed(`${valgte.length} stk er lånt ut til ${person}.`); ga('');
+        } catch (err) { beskjed(feiltekst(err)); }
+      });
+    }
+
+    // ---------- Løst utstyr (uten kit) ----------
+    async function visLost() {
+      const [enheter, typer] = await Promise.all([
+        db(sb.from('enhet').select('*, utstyrstype(id, navn, kategori, er_kolli)').is('kit_id', null).order('opprettet')),
+        db(sb.from('utstyrstype').select('*'))
+      ]);
+      const valgbare = typer.filter(t => !t.er_kolli);
+      const grupper = [];
+      for (const e of enheter) {
+        let g = grupper.find(x => x.navn === e.utstyrstype.kategori);
+        if (!g) grupper.push(g = { navn: e.utstyrstype.kategori, typer: [] });
+        let t = g.typer.find(x => x.id === e.utstyrstype.id);
+        if (!t) g.typer.push(t = { id: e.utstyrstype.id, navn: e.utstyrstype.navn, enheter: [] });
+        t.enheter.push(e);
+      }
+      grupper.sort((a, b) => a.navn.localeCompare(b.navn, 'nb'));
+      app.innerHTML = `
+    <a class="tilbake" href="#">Alle kit</a>
+    <h1>Løst utstyr</h1>
+    <p class="sub">Utstyr som ikke hører til et kit, for eksempel reserver. Det kan flyttes inn i et kit fra siden til hver enhet.</p>
+    <h2>Registrer løst utstyr</h2>
+    <form id="nylost" class="boksen">
+      ${typeVelgerHtml(valgbare)}
+      <p><button class="knapp hoved">Fortsett til merking</button></p>
+    </form>
+    ${enheter.length ? '' : '<p style="margin-top:20px">Ingen løst utstyr er registrert ennå.</p>'}
+    ${grupper.map(g => `
+      <h2>${esc(g.navn)}</h2>
+      <div class="gruppe">${g.typer.map(t => `
+        <div class="linje">
+          <div class="linje-topp"><span>${esc(t.navn)}</span><span class="antall">${t.enheter.length} stk</span></div>
+          <div class="merker">${t.enheter.map(e => `<a class="merke ${e.status}" href="#enhet/${e.id}" title="${STATUS[e.status]}">${esc(visNr(e))}</a>`).join('')}</div>
+        </div>`).join('')}</div>`).join('')}`;
+      handlinger = {};
+      const f = document.getElementById('nylost');
+      koblTypeVelger(f);
+      f.addEventListener('submit', async e => {
+        e.preventDefault();
+        const t = await hentValgtType(f, valgbare);
+        if (!t) return;
+        registrerArk({ id: null, utlaant_til: null }, { utstyrstype: t }, enheter);
+      });
+    }
+
     // ---------- Ruting ----------
     let visNr_ = 0;
     async function vis() {
@@ -1177,6 +1635,11 @@
         else if (side === 'ut' && id) await visUt(id);
         else if (side === 'inn' && id) await visInn(id);
         else if (side === 'enhet' && id) await visEnhet(id);
+        else if (side === 'admin') await visAdmin();
+        else if (side === 'mal' && id) await visMal(id);
+        else if (side === 'logg' && id) await visLogg(id);
+        else if (side === 'lost') await visLost();
+        else if (side === 'laan') await visLaan(id);
         else await visForside();
         if (denne === visNr_) window.scrollTo(0, 0);
       } catch (err) {

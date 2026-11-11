@@ -1,0 +1,1211 @@
+<!doctype html>
+<html lang="nb">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Utstyr</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #e9ebec;
+      /* lagergulv */
+      --flate: #ffffff;
+      /* klistremerke */
+      --blekk: #15181b;
+      --dempet: #5c646b;
+      --strek: #cfd4d7;
+      --gul: #ffd21f;
+      /* koffertgul: hovedhandling */
+      --gul-blekk: #15181b;
+      --inne: #1a7f45;
+      --ute: #1f62c9;
+      --mangler: #c22e27;
+      --defekt: #8a5a00;
+      --inne-bg: #e2f3e8;
+      --ute-bg: #e3ecfb;
+      --mangler-bg: #fbe6e4;
+      --defekt-bg: #f8edd2;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --bg: #14171a;
+        --flate: #1f2428;
+        --blekk: #f1f3f4;
+        --dempet: #a2abb2;
+        --strek: #363d43;
+        --inne: #5fd08c;
+        --ute: #7fb0ff;
+        --mangler: #ff8a82;
+        --defekt: #f0c060;
+        --inne-bg: #173323;
+        --ute-bg: #19294a;
+        --mangler-bg: #43201d;
+        --defekt-bg: #3b2f12;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--blekk);
+      font: 400 17px/1.4 Archivo, "Helvetica Neue", Arial, sans-serif;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    a {
+      color: inherit;
+    }
+
+    h1 {
+      font-size: 28px;
+      line-height: 1.15;
+      font-weight: 700;
+      margin: 0 0 4px;
+      letter-spacing: -0.01em;
+    }
+
+    h2 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--dempet);
+      margin: 28px 0 8px;
+    }
+
+    p {
+      margin: 0 0 12px;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+      color: inherit;
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--ute);
+      outline-offset: 2px;
+    }
+
+    .topp {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px;
+      background: var(--blekk);
+      color: var(--bg);
+    }
+
+    .topp a {
+      font-weight: 700;
+      font-size: 18px;
+      text-decoration: none;
+    }
+
+    .topp button {
+      background: none;
+      border: 0;
+      color: inherit;
+      padding: 8px 0;
+      opacity: .8;
+    }
+
+    main {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 20px 16px 120px;
+    }
+
+    .tilbake {
+      display: inline-block;
+      margin-bottom: 14px;
+      color: var(--dempet);
+      text-decoration: none;
+      font-weight: 500;
+      padding: 4px 0;
+    }
+
+    .sub {
+      color: var(--dempet);
+      font-size: 15px;
+    }
+
+    /* Knapper */
+    .knapp {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 48px;
+      padding: 0 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      border: 1.5px solid var(--blekk);
+      background: var(--flate);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .knapp.hoved {
+      background: var(--gul);
+      color: var(--gul-blekk);
+      border-color: var(--gul-blekk);
+    }
+
+    .knapp.stor {
+      width: 100%;
+      min-height: 60px;
+      font-size: 19px;
+    }
+
+    .knapp.fare {
+      border-color: var(--mangler);
+      color: var(--mangler);
+    }
+
+    .knapp[disabled] {
+      opacity: .5;
+    }
+
+    .knapper {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    .knapper .knapp {
+      flex: 1 1 140px;
+    }
+
+    /* Statusmerker */
+    .status {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .status.tilgjengelig,
+    .status.inne {
+      background: var(--inne-bg);
+      color: var(--inne);
+    }
+
+    .status.utlaant,
+    .status.ute {
+      background: var(--ute-bg);
+      color: var(--ute);
+    }
+
+    .status.mangler {
+      background: var(--mangler-bg);
+      color: var(--mangler);
+    }
+
+    .status.defekt {
+      background: var(--defekt-bg);
+      color: var(--defekt);
+    }
+
+    /* Kitliste */
+    .liste {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .kitrad {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px 12px;
+      align-items: center;
+      background: var(--flate);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 10px;
+      text-decoration: none;
+    }
+
+    .kitrad b {
+      font-size: 20px;
+    }
+
+    .kitrad .sub {
+      grid-column: 1 / -1;
+    }
+
+    /* Fasitlinjer */
+    .gruppe {
+      background: var(--flate);
+      border-radius: 12px;
+      padding: 0 14px;
+    }
+
+    .linje {
+      padding: 12px 0;
+      border-top: 1px solid var(--strek);
+    }
+
+    .linje:first-child {
+      border-top: 0;
+    }
+
+    .linje-topp {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+    }
+
+    .linje-topp span:first-child {
+      font-weight: 500;
+    }
+
+    .antall {
+      font-size: 14px;
+      color: var(--dempet);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .antall.lav {
+      color: var(--mangler);
+      font-weight: 600;
+    }
+
+    .merker {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    /* Nummeret vises som klistremerket det står på */
+    .merke {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 36px;
+      padding: 0 11px;
+      background: #fff;
+      color: #111;
+      border: 1.5px solid #111;
+      border-radius: 7px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: .04em;
+      text-decoration: none;
+    }
+
+    .merke::before {
+      content: "";
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #1a7f45;
+    }
+
+    .merke.utlaant::before {
+      background: #1f62c9;
+    }
+
+    .merke.mangler::before {
+      background: #c22e27;
+    }
+
+    .merke.defekt::before {
+      background: #b07a00;
+    }
+
+    .merke.stort {
+      font-size: 30px;
+      min-height: 60px;
+      padding: 0 18px;
+      border-width: 2px;
+      border-radius: 10px;
+    }
+
+    .merke.stort::before {
+      display: none;
+    }
+
+    .legg-til {
+      min-height: 36px;
+      padding: 0 12px;
+      border-radius: 7px;
+      cursor: pointer;
+      border: 1.5px dashed var(--dempet);
+      background: none;
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    /* Skjema */
+    label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 14px;
+    }
+
+    input,
+    select,
+    textarea {
+      display: block;
+      width: 100%;
+      min-height: 48px;
+      margin-top: 6px;
+      padding: 10px 12px;
+      background: var(--flate);
+      border: 1.5px solid var(--strek);
+      border-radius: 10px;
+    }
+
+    textarea {
+      min-height: 80px;
+    }
+
+    .rad {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    .rad input {
+      flex: 1;
+    }
+
+    .varsel {
+      background: var(--defekt-bg);
+      color: var(--defekt);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin: 14px 0;
+      font-weight: 500;
+    }
+
+    .varsel ul {
+      margin: 6px 0 0;
+      padding-left: 20px;
+      font-weight: 400;
+    }
+
+    dl {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 6px 16px;
+      margin: 16px 0;
+    }
+
+    dt {
+      color: var(--dempet);
+    }
+
+    dd {
+      margin: 0;
+      font-weight: 500;
+      overflow-wrap: anywhere;
+    }
+
+    /* Sjekkliste ved innlevering */
+    .sjekk {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+      border-top: 1px solid var(--strek);
+    }
+
+    .sjekk:first-child {
+      border-top: 0;
+    }
+
+    .sjekk-hoved {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-align: left;
+      background: none;
+      border: 0;
+      padding: 12px 0;
+      cursor: pointer;
+      min-height: 56px;
+    }
+
+    .boks {
+      flex: none;
+      width: 28px;
+      height: 28px;
+      border: 2px solid var(--dempet);
+      border-radius: 7px;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+    }
+
+    .sjekk.funnet .boks {
+      background: var(--inne);
+      border-color: var(--inne);
+      color: var(--flate);
+    }
+
+    .sjekk.funnet .boks::after {
+      content: "✓";
+    }
+
+    .sjekk.defekt .boks {
+      background: var(--defekt);
+      border-color: var(--defekt);
+      color: var(--flate);
+    }
+
+    .sjekk.defekt .boks::after {
+      content: "!";
+    }
+
+    .sjekk-hoved b {
+      display: block;
+      font-weight: 500;
+    }
+
+    .mini {
+      align-self: center;
+      min-height: 36px;
+      padding: 0 10px;
+      border-radius: 7px;
+      border: 1.5px solid var(--strek);
+      background: none;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .mini.paa {
+      background: var(--defekt-bg);
+      border-color: var(--defekt);
+      color: var(--defekt);
+      font-weight: 600;
+    }
+
+    .bunn {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--flate);
+      border-top: 1px solid var(--strek);
+      padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .bunn-inni {
+      max-width: 640px;
+      margin: 0 auto;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .bunn-inni .teller {
+      flex: 1;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Logg */
+    .logg {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .logg li {
+      padding: 10px 0;
+      border-top: 1px solid var(--strek);
+    }
+
+    .logg li:first-child {
+      border-top: 0;
+    }
+
+    /* Ark og skanner */
+    #lag {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .55);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 20;
+    }
+
+    #lag[hidden] {
+      display: none;
+    }
+
+    .ark {
+      width: 100%;
+      max-width: 640px;
+      max-height: 100%;
+      overflow: auto;
+      background: var(--bg);
+      border-radius: 16px 16px 0 0;
+      padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .ark-topp {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .ark-topp h1 {
+      font-size: 21px;
+      margin: 0;
+    }
+
+    .ark-topp button {
+      background: none;
+      border: 0;
+      padding: 10px 0 10px 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .kamera {
+      position: relative;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      aspect-ratio: 4 / 3;
+    }
+
+    .kamera video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .kamera::after {
+      content: "";
+      position: absolute;
+      inset: 18% 24%;
+      border: 3px solid var(--gul);
+      border-radius: 12px;
+      pointer-events: none;
+    }
+
+    .kamera.feil::after {
+      display: none;
+    }
+
+    .kamera p {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+      margin: 0;
+    }
+
+    .treff {
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 10px;
+      margin: 10px 0;
+      font-weight: 600;
+    }
+
+    .treff.ok {
+      background: var(--inne-bg);
+      color: var(--inne);
+    }
+
+    .treff.nei {
+      background: var(--mangler-bg);
+      color: var(--mangler);
+    }
+
+    #beskjed {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+      z-index: 30;
+      max-width: 608px;
+      margin: 0 auto;
+      background: var(--blekk);
+      color: var(--bg);
+      padding: 14px 16px;
+      border-radius: 10px;
+      font-weight: 500;
+    }
+
+    #beskjed[hidden] {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="topp">
+    <a href="#">Utstyr</a>
+    <button id="loggut" hidden>Logg ut</button>
+  </header>
+  <main id="app"></main>
+  <div id="lag" hidden></div>
+  <div id="beskjed" role="status" hidden></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script>
+    // ====================================================================
+    // LIM INN VERDIENE FRA SUPABASE HER (Project Settings -> API)
+    // Bruk "anon" / "publishable"-nøkkelen. Aldri "service_role" / "secret".
+    // ====================================================================
+    const SUPABASE_URL = 'https://yukbefaeuuliujirxosc.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_58tfd6w4C_RFuHYQuuKerw_O5ZH6PjY';
+    // ====================================================================
+
+    const STATUS = { tilgjengelig: 'Inne', utlaant: 'Ute', mangler: 'Mangler', defekt: 'Defekt' };
+    const HENDELSE = {
+      registrert: 'Registrert', utlevert: 'Levert ut', innlevert: 'Levert inn', mangler: 'Meldt som mangler',
+      defekt: 'Meldt som defekt', funnet: 'Funnet igjen', flyttet: 'Flyttet', reparert: 'I orden igjen', kommentar: 'Kommentar'
+    };
+
+    const app = document.getElementById('app');
+    const lag = document.getElementById('lag');
+    const beskjedEl = document.getElementById('beskjed');
+    const loggutKnapp = document.getElementById('loggut');
+    let sb = null, okt = null, handlinger = {}, stoppKamera = null;
+
+    // ---------- Hjelpere ----------
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    // "33" og "0033" blir "00033". SIM-nummer får bare fjernet mellomrom.
+    const normKode = k => { k = String(k ?? '').replace(/\s/g, ''); return /^\d{1,5}$/.test(k) ? k.padStart(5, '0') : k; };
+    const dato = t => t ? new Date(t).toLocaleDateString('nb-NO', { day: 'numeric', month: 'short' }) : '';
+    const datoTid = t => t ? new Date(t).toLocaleString('nb-NO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+    const visNr = e => e.merke_nummer || ('SIM ' + String(e.sim_nummer || '').slice(-6));
+
+    async function db(sporring) {
+      const { data, error } = await sporring;
+      if (error) throw error;
+      return data;
+    }
+    function feiltekst(e) {
+      if (e && e.code === '23505') {
+        if (String(e.message).includes('utlaan_ett_aktivt')) return 'Kitet er allerede levert ut.';
+        return 'Nummeret er allerede i bruk på annet utstyr.';
+      }
+      if (e && e.code === '23514') return 'Nummeret har feil format.';
+      return (e && e.message) || 'Noe gikk galt. Prøv igjen.';
+    }
+    let beskjedTid;
+    function beskjed(tekst) {
+      beskjedEl.textContent = tekst; beskjedEl.hidden = false;
+      clearTimeout(beskjedTid); beskjedTid = setTimeout(() => { beskjedEl.hidden = true; }, 4500);
+    }
+    function ga(hash) { if (location.hash === '#' + hash) vis(); else location.hash = hash; }
+    function lukkLag() {
+      if (stoppKamera) { stoppKamera(); stoppKamera = null; }
+      lag.hidden = true; lag.innerHTML = '';
+    }
+    function pip(ok) {
+      try {
+        const ctx = pip.ctx || (pip.ctx = new (window.AudioContext || window.webkitAudioContext)());
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.frequency.value = ok ? 880 : 220; g.gain.value = 0.08;
+        o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + (ok ? 0.09 : 0.25));
+      } catch (_) { }
+      if (navigator.vibrate) navigator.vibrate(ok ? 40 : [60, 40, 60]);
+    }
+
+    app.addEventListener('click', e => {
+      const el = e.target.closest('[data-h]');
+      if (el && handlinger[el.dataset.h]) { e.preventDefault(); handlinger[el.dataset.h](el); }
+    });
+    lag.addEventListener('click', e => { if (e.target === lag || e.target.closest('[data-lukk]')) lukkLag(); });
+    loggutKnapp.addEventListener('click', () => sb.auth.signOut());
+
+    // ---------- Skanner (kamera + manuell inntasting) ----------
+    // fortlopende = true: skanneren står åpen og tar imot flere koder (innlevering).
+    function aapneSkanner({ tittel, hint, fortlopende, vedKode }) {
+      lukkLag();
+      lag.innerHTML = `
+    <div class="ark">
+      <div class="ark-topp"><h1>${esc(tittel)}</h1><button data-lukk>${fortlopende ? 'Ferdig' : 'Lukk'}</button></div>
+      <div class="kamera"><video playsinline muted></video></div>
+      <div class="treff" aria-live="polite">${esc(hint || 'Hold merket inni den gule rammen.')}</div>
+      <form class="rad">
+        <label style="flex:1;margin:0">Eller tast nummeret
+          <input name="nr" inputmode="numeric" autocomplete="off" placeholder="00033">
+        </label>
+        <button class="knapp">Bruk</button>
+      </form>
+    </div>`;
+      lag.hidden = false;
+      const video = lag.querySelector('video'), treff = lag.querySelector('.treff'), skjema = lag.querySelector('form');
+      let strom = null, ramme = 0, aktiv = true, sist = '', sistTid = 0, opptatt = false;
+      const lerret = document.createElement('canvas'), tegn = lerret.getContext('2d', { willReadFrequently: true });
+
+      async function behandle(raa) {
+        const kode = normKode(raa);
+        if (!kode || opptatt) return;
+        if (!fortlopende) { lukkLag(); await vedKode(kode); return; }
+        opptatt = true;
+        try {
+          const svar = await vedKode(kode);
+          treff.className = 'treff ' + (svar.ok ? 'ok' : 'nei');
+          treff.textContent = svar.tekst;
+          pip(svar.ok);
+        } finally { opptatt = false; }
+      }
+      skjema.addEventListener('submit', e => {
+        e.preventDefault();
+        const v = skjema.nr.value; skjema.nr.value = '';
+        if (v.trim()) behandle(v);
+      });
+
+      let forrige = 0;
+      function les(naa) {
+        if (!aktiv) return;
+        ramme = requestAnimationFrame(les);
+        if (naa - forrige < 140 || video.readyState < 2 || !video.videoWidth) return;
+        forrige = naa;
+        const skala = Math.min(1, 640 / video.videoWidth);
+        lerret.width = Math.round(video.videoWidth * skala); lerret.height = Math.round(video.videoHeight * skala);
+        tegn.drawImage(video, 0, 0, lerret.width, lerret.height);
+        const bilde = tegn.getImageData(0, 0, lerret.width, lerret.height);
+        const funn = window.jsQR ? jsQR(bilde.data, bilde.width, bilde.height, { inversionAttempts: 'dontInvert' }) : null;
+        if (funn && funn.data) {
+          const t = Date.now();
+          if (funn.data === sist && t - sistTid < 2500) return;   // samme merke holdt foran kameraet
+          sist = funn.data; sistTid = t;
+          behandle(funn.data);
+        }
+      }
+      function kameraFeil() {
+        const k = lag.querySelector('.kamera');
+        if (k) k.classList.add('feil');
+        if (k) k.innerHTML = '<p>Kameraet er ikke tilgjengelig. Tast nummeret i feltet under.</p>';
+      }
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+          .then(s => {
+            if (!aktiv) { s.getTracks().forEach(t => t.stop()); return; }
+            strom = s; video.srcObject = s; video.play().catch(() => { });
+            ramme = requestAnimationFrame(les);
+          })
+          .catch(kameraFeil);
+      } else kameraFeil();
+
+      stoppKamera = () => {
+        aktiv = false; cancelAnimationFrame(ramme);
+        if (strom) strom.getTracks().forEach(t => t.stop());
+      };
+    }
+
+    // Slår opp et nummer og åpner riktig side
+    async function finnOgVis(kode) {
+      try {
+        const treff = await db(sb.rpc('finn_enhet', { p_kode: kode }));
+        if (!treff.length) { beskjed(`${kode} er ikke registrert. Åpne kitet og velg «Registrer» på riktig linje.`); return; }
+        const e = await db(sb.from('enhet').select('id, kit_id, utstyrstype(er_kolli)').eq('id', treff[0].id).single());
+        ga(e.utstyrstype.er_kolli && e.kit_id ? 'kit/' + e.kit_id : 'enhet/' + e.id);
+      } catch (err) { beskjed(feiltekst(err)); }
+    }
+
+    // ---------- Innlogging ----------
+    function visInnlogging() {
+      handlinger = {};
+      app.innerHTML = `
+    <h1>Logg inn</h1>
+    <p class="sub">Bruk e-post og passord du har fått tildelt.</p>
+    <form id="inn" style="margin-top:20px">
+      <label>E-post <input name="epost" type="email" autocomplete="username" required></label>
+      <label>Passord <input name="passord" type="password" autocomplete="current-password" required></label>
+      <button class="knapp hoved stor">Logg inn</button>
+    </form>`;
+      const f = document.getElementById('inn');
+      f.addEventListener('submit', async e => {
+        e.preventDefault();
+        const { error } = await sb.auth.signInWithPassword({ email: f.epost.value.trim(), password: f.passord.value });
+        if (error) beskjed('Feil e-post eller passord.');
+      });
+    }
+
+    // ---------- Forside: alle kit ----------
+    async function visForside() {
+      const kit = await db(sb.from('kit_oversikt').select('*').order('navn'));
+      app.innerHTML = `
+    <button class="knapp hoved stor" data-h="skann">Skann eller tast nummer</button>
+    <h2>Kit</h2>
+    ${kit.length ? '' : '<p>Ingen kit er lagt inn ennå.</p>'}
+    <ul class="liste">${kit.map(k => `
+      <li><a class="kitrad" href="#kit/${k.id}">
+        <b>${esc(k.navn)}</b>
+        <span class="status ${k.utlaant_til ? 'ute' : 'inne'}">${k.utlaant_til ? 'Ute hos ' + esc(k.utlaant_til) : 'Inne'}</span>
+        <span class="sub">${k.registrert} av ${k.forventet} registrert${k.mangler > 0 ? `, ${k.mangler} mangler` : ''}${k.defekt > 0 ? `, ${k.defekt} defekt` : ''}</span>
+      </a></li>`).join('')}
+    </ul>`;
+      handlinger = { skann: () => aapneSkanner({ tittel: 'Finn utstyr', vedKode: finnOgVis }) };
+    }
+
+    // ---------- Kit: fasit og registrering ----------
+    async function visKit(id) {
+      const [kit, mal, enheter] = await Promise.all([
+        db(sb.from('kit_oversikt').select('*').eq('id', id).single()),
+        db(sb.from('kit_mal').select('id, antall, sortering, kjent_serienummer, utstyrstype(*)').eq('kit_id', id).order('sortering')),
+        db(sb.from('enhet').select('*, utstyrstype(id, navn, kategori, er_kolli)').eq('kit_id', id).order('opprettet'))
+      ]);
+      const merkeHtml = e => `<a class="merke ${e.status}" href="#enhet/${e.id}" title="${STATUS[e.status]}">${esc(visNr(e))}</a>`;
+      const grupper = [];
+      for (const m of mal) {
+        let g = grupper.find(x => x.navn === m.utstyrstype.kategori);
+        if (!g) grupper.push(g = { navn: m.utstyrstype.kategori, linjer: [] });
+        g.linjer.push(m);
+      }
+      const iMal = new Set(mal.map(m => m.utstyrstype.id));
+      const utenfor = enheter.filter(e => !iMal.has(e.utstyrstype_id));
+      const ureg = kit.forventet - enheter.filter(e => iMal.has(e.utstyrstype_id)).length;
+
+      app.innerHTML = `
+    <a class="tilbake" href="#">Alle kit</a>
+    <h1>${esc(kit.navn)}</h1>
+    <p>${kit.utlaant_til
+          ? `<span class="status ute">Ute hos ${esc(kit.utlaant_til)}</span> <span class="sub">siden ${dato(kit.ut_tid)}${kit.oppdrag ? ', ' + esc(kit.oppdrag) : ''}${kit.forventet_inn ? ', ventes inn ' + dato(kit.forventet_inn) : ''}</span>`
+          : '<span class="status inne">Inne</span>'}</p>
+    <div class="knapper">
+      ${kit.utlaant_til
+          ? `<a class="knapp hoved" href="#inn/${id}">Lever inn</a>`
+          : `<a class="knapp hoved" href="#ut/${id}">Lever ut</a>`}
+    </div>
+    ${ureg > 0 ? `<div class="varsel">${ureg} av ${kit.forventet} enheter er ikke registrert ennå. Trykk «Registrer» på linjen, og skann merket du har klistret på.</div>` : ''}
+    ${grupper.map(g => `
+      <h2>${esc(g.navn)}</h2>
+      <div class="gruppe">${g.linjer.map(m => {
+            const mine = enheter.filter(e => e.utstyrstype_id === m.utstyrstype.id);
+            return `<div class="linje">
+          <div class="linje-topp"><span>${esc(m.utstyrstype.navn)}</span>
+            <span class="antall ${mine.length < m.antall ? 'lav' : ''}">${mine.length} av ${m.antall}</span></div>
+          <div class="merker">${mine.map(merkeHtml).join('')}
+            ${mine.length < m.antall ? `<button class="legg-til" data-h="reg" data-mal="${m.id}">Registrer</button>` : ''}</div>
+        </div>`;
+          }).join('')}</div>`).join('')}
+    ${utenfor.length ? `<h2>I kitet, men ikke i fasiten</h2><div class="gruppe">${utenfor.map(e => `
+      <div class="linje"><div class="linje-topp"><span>${esc(e.utstyrstype.navn)}</span></div>
+      <div class="merker">${merkeHtml(e)}</div></div>`).join('')}</div>` : ''}`;
+
+      handlinger = { reg: el => registrerArk(kit, mal.find(m => m.id === el.dataset.mal), enheter) };
+    }
+
+    function registrerArk(kit, m, enheter, forhaand = {}) {
+      lukkLag();
+      const t = m.utstyrstype, erSim = t.identifisering === 'sim';
+      const kanHaSim = enheter.filter(e => e.merke_nummer && !e.utstyrstype.er_kolli);
+      lag.innerHTML = `
+    <form class="ark">
+      <div class="ark-topp"><h1>Registrer ${esc(t.navn)}</h1><button type="button" data-lukk>Avbryt</button></div>
+      ${erSim ? `
+        <label>SIM-nummer (står trykket på kortet)
+          <input name="sim" inputmode="numeric" autocomplete="off" required></label>
+        <label>Sitter i
+          <select name="forelder"><option value="">Ikke valgt</option>
+            ${kanHaSim.map(e => `<option value="${e.id}">${esc(e.utstyrstype.navn)} (${esc(e.merke_nummer)})</option>`).join('')}
+          </select></label>` : `
+        <div class="rad" style="margin-bottom:14px">
+          <label style="flex:1;margin:0">Nummer på merket
+            <input name="nr" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="00033" required value="${esc(forhaand.nr || '')}"></label>
+          <button type="button" class="knapp" data-skann>Skann</button>
+        </div>
+        ${t.manuell_merking ? '<p class="sub">Dette merkes for hånd. Skriv nummeret på med tusj.</p>' : ''}
+        <label>Serienummer (valgfritt)
+          <input name="serie" autocomplete="off" value="${esc(forhaand.serie ?? m.kjent_serienummer ?? '')}"></label>`}
+      <button class="knapp hoved stor">Lagre</button>
+    </form>`;
+      lag.hidden = false;
+      const f = lag.querySelector('form');
+      const skann = f.querySelector('[data-skann]');
+      if (skann) skann.addEventListener('click', () => {
+        const serie = f.serie.value;
+        aapneSkanner({ tittel: 'Skann merket', vedKode: kode => registrerArk(kit, m, enheter, { nr: kode, serie }) });
+      });
+      f.addEventListener('submit', async e => {
+        e.preventDefault();
+        const rad = { utstyrstype_id: t.id, kit_id: kit.id, status: kit.utlaant_til ? 'utlaant' : 'tilgjengelig' };
+        if (erSim) {
+          rad.sim_nummer = f.sim.value.replace(/\s/g, '');
+          rad.forelder_enhet_id = f.forelder.value || null;
+          if (!/^\d{8,22}$/.test(rad.sim_nummer)) { beskjed('SIM-nummeret skal bare ha sifre (8 til 22).'); return; }
+        } else {
+          rad.merke_nummer = normKode(f.nr.value);
+          rad.serienummer = f.serie.value.trim() || null;
+          if (!/^\d{5}$/.test(rad.merke_nummer)) { beskjed('Nummeret skal ha fem sifre, for eksempel 00033.'); return; }
+        }
+        try {
+          const ny = await db(sb.from('enhet').insert(rad).select('id').single());
+          await db(sb.from('hendelse').insert({ enhet_id: ny.id, kit_id: kit.id, type: 'registrert' }));
+          lukkLag(); beskjed(`${t.navn} er registrert.`); vis();
+        } catch (err) { beskjed(feiltekst(err)); }
+      });
+    }
+
+    // ---------- Utlevering ----------
+    async function visUt(id) {
+      const kit = await db(sb.from('kit_oversikt').select('*').eq('id', id).single());
+      if (kit.utlaant_til) { ga('kit/' + id); return; }
+      const ureg = kit.forventet - kit.registrert;
+      const avvik = [];
+      if (ureg > 0) avvik.push(`${ureg} enheter er ikke registrert`);
+      if (kit.mangler > 0) avvik.push(`${kit.mangler} mangler`);
+      if (kit.defekt > 0) avvik.push(`${kit.defekt} er defekt`);
+      app.innerHTML = `
+    <a class="tilbake" href="#kit/${id}">${esc(kit.navn)}</a>
+    <h1>Lever ut ${esc(kit.navn)}</h1>
+    ${avvik.length ? `<div class="varsel">Kitet er ikke komplett:<ul>${avvik.map(a => `<li>${a}</li>`).join('')}</ul></div>` : ''}
+    <form id="ut" style="margin-top:20px">
+      <label>Hvem får kitet? <input name="person" autocomplete="off" required></label>
+      <label>Oppdrag (valgfritt) <input name="oppdrag" autocomplete="off" placeholder="F.eks. kamp eller arrangement"></label>
+      <label>Ventes inn (valgfritt) <input name="inn" type="date"></label>
+      <button class="knapp hoved stor">Lever ut</button>
+    </form>`;
+      handlinger = {};
+      const f = document.getElementById('ut');
+      f.addEventListener('submit', async e => {
+        e.preventDefault();
+        try {
+          await db(sb.rpc('lever_ut', {
+            p_kit_id: id, p_person: f.person.value.trim(), p_oppdrag: f.oppdrag.value.trim() || null,
+            p_forventet_inn: f.inn.value ? new Date(f.inn.value + 'T23:59:00').toISOString() : null
+          }));
+          beskjed(`${kit.navn} er levert ut til ${f.person.value.trim()}.`); ga('kit/' + id);
+        } catch (err) { beskjed(feiltekst(err)); }
+      });
+    }
+
+    // ---------- Innlevering ----------
+    async function visInn(id) {
+      const [kit, laan, mal, enheter] = await Promise.all([
+        db(sb.from('kit_oversikt').select('*').eq('id', id).single()),
+        db(sb.from('utlaan').select('*').eq('kit_id', id).is('inn_tid', null).maybeSingle()),
+        db(sb.from('kit_mal').select('utstyrstype_id, sortering').eq('kit_id', id)),
+        db(sb.from('enhet').select('*, utstyrstype(navn, kategori)').eq('kit_id', id).in('status', ['utlaant', 'mangler']))
+      ]);
+      if (!laan) { ga('kit/' + id); return; }
+      const rekke = Object.fromEntries(mal.map(m => [m.utstyrstype_id, m.sortering]));
+      enheter.sort((a, b) => (rekke[a.utstyrstype_id] ?? 999) - (rekke[b.utstyrstype_id] ?? 999));
+      const valg = {};   // enhet-id -> 'funnet' | 'defekt'
+
+      app.innerHTML = `
+    <a class="tilbake" href="#kit/${id}">${esc(kit.navn)}</a>
+    <h1>Lever inn ${esc(kit.navn)}</h1>
+    <p class="sub">Hos ${esc(laan.person)} siden ${dato(laan.ut_tid)} Skann hvert merke, eller trykk på linjen for å krysse av.</p>
+    <div class="gruppe" id="sjekkliste" style="margin-top:16px"></div>
+    <label style="margin-top:20px">Kommentar (valgfritt) <textarea id="kommentar"></textarea></label>
+    <div class="bunn"><div class="bunn-inni">
+      <span class="teller" id="teller"></span>
+      <button class="knapp" data-h="skann">Skann</button>
+      <button class="knapp hoved" data-h="fullfor">Fullfør</button>
+    </div></div>`;
+
+      function tegn() {
+        document.getElementById('sjekkliste').innerHTML = enheter.map(e => `
+      <div class="sjekk ${valg[e.id] || ''}">
+        <button class="sjekk-hoved" data-h="kryss" data-id="${e.id}" aria-pressed="${!!valg[e.id]}">
+          <span class="boks"></span>
+          <span><b>${esc(e.utstyrstype.navn)}</b>
+            <span class="sub">${esc(visNr(e))}${e.status === 'mangler' ? ', manglet fra før' : ''}</span></span>
+        </button>
+        <button class="mini ${valg[e.id] === 'defekt' ? 'paa' : ''}" data-h="defekt" data-id="${e.id}">Defekt</button>
+      </div>`).join('') || '<p style="padding:14px 0">Ingen enheter er registrert på dette kitet.</p>';
+        document.getElementById('teller').textContent = `${Object.keys(valg).length} av ${enheter.length} sjekket`;
+      }
+      tegn();
+
+      handlinger = {
+        kryss: el => { const i = el.dataset.id; if (valg[i]) delete valg[i]; else valg[i] = 'funnet'; tegn(); },
+        defekt: el => { const i = el.dataset.id; if (valg[i] === 'defekt') valg[i] = 'funnet'; else valg[i] = 'defekt'; tegn(); },
+        skann: () => aapneSkanner({
+          tittel: 'Skann utstyret', fortlopende: true,
+          vedKode: kode => {
+            const e = enheter.find(x => x.merke_nummer === kode || x.sim_nummer === kode);
+            if (!e) return { ok: false, tekst: `${kode} hører ikke til dette kitet` };
+            if (valg[e.id]) return { ok: true, tekst: `${e.utstyrstype.navn} er allerede krysset av` };
+            valg[e.id] = 'funnet'; tegn();
+            return { ok: true, tekst: `${e.utstyrstype.navn} ${kode}` };
+          }
+        }),
+        fullfor: async () => {
+          const rest = enheter.filter(e => e.status === 'utlaant' && !valg[e.id]).length;
+          if (rest > 0 && !confirm(`${rest} enheter er ikke krysset av og blir satt som mangler. Vil du fullføre?`)) return;
+          try {
+            await db(sb.rpc('lever_inn', {
+              p_utlaan_id: laan.id,
+              p_funnet: Object.keys(valg).filter(i => valg[i] === 'funnet'),
+              p_defekt: Object.keys(valg).filter(i => valg[i] === 'defekt'),
+              p_kommentar: document.getElementById('kommentar').value.trim() || null
+            }));
+            beskjed(rest > 0 ? `${kit.navn} er levert inn. ${rest} mangler.` : `${kit.navn} er levert inn, komplett.`);
+            ga('kit/' + id);
+          } catch (err) { beskjed(feiltekst(err)); }
+        }
+      };
+    }
+
+    // ---------- Én enhet ----------
+    async function visEnhet(id) {
+      const e = await db(sb.from('enhet').select('*, utstyrstype(*), kit(id, navn)').eq('id', id).single());
+      const [simkort, logg, alleKit, forelder, laan] = await Promise.all([
+        db(sb.from('enhet').select('id, sim_nummer').eq('forelder_enhet_id', id)),
+        db(sb.from('hendelse').select('*').eq('enhet_id', id).order('tid', { ascending: false }).limit(20)),
+        db(sb.from('kit').select('id, navn').order('navn')),
+        e.forelder_enhet_id ? db(sb.from('enhet').select('id, merke_nummer, utstyrstype(navn)').eq('id', e.forelder_enhet_id).single()) : null,
+        e.kit_id ? db(sb.from('utlaan').select('id, person').eq('kit_id', e.kit_id).is('inn_tid', null).maybeSingle()) : null
+      ]);
+      const avvik = e.status === 'mangler' || e.status === 'defekt';
+      app.innerHTML = `
+    <a class="tilbake" href="${e.kit ? '#kit/' + e.kit.id : '#'}">${e.kit ? esc(e.kit.navn) : 'Alle kit'}</a>
+    <p>${e.merke_nummer ? `<span class="merke stort">${esc(e.merke_nummer)}</span>` : ''}</p>
+    <h1>${esc(e.utstyrstype.navn)}</h1>
+    <p><span class="status ${e.status}">${STATUS[e.status]}</span>
+      ${e.status === 'utlaant' && laan ? `<span class="sub">hos ${esc(laan.person)}</span>` : ''}</p>
+    <dl>
+      <dt>Kit</dt><dd>${e.kit ? `<a href="#kit/${e.kit.id}">${esc(e.kit.navn)}</a>` : 'Løst utstyr'}</dd>
+      <dt>Kategori</dt><dd>${esc(e.utstyrstype.kategori)}</dd>
+      ${e.serienummer ? `<dt>Serienummer</dt><dd>${esc(e.serienummer)}</dd>` : ''}
+      ${e.sim_nummer ? `<dt>SIM-nummer</dt><dd>${esc(e.sim_nummer)}</dd>` : ''}
+      ${forelder ? `<dt>Sitter i</dt><dd><a href="#enhet/${forelder.id}">${esc(forelder.utstyrstype.navn)} (${esc(forelder.merke_nummer)})</a></dd>` : ''}
+      ${simkort.length ? `<dt>SIM-kort</dt><dd>${simkort.map(s => `<a href="#enhet/${s.id}">${esc(s.sim_nummer)}</a>`).join('<br>')}</dd>` : ''}
+    </dl>
+    <div class="knapper">
+      ${avvik ? '<button class="knapp hoved" data-h="iorden">Sett som i orden</button>' : ''}
+      ${e.status !== 'defekt' ? '<button class="knapp fare" data-h="defekt">Meld defekt</button>' : ''}
+      ${e.status !== 'mangler' ? '<button class="knapp fare" data-h="mangler">Meld som mangler</button>' : ''}
+      <button class="knapp" data-h="kommentar">Legg til kommentar</button>
+      ${e.merke_nummer ? '<button class="knapp" data-h="nyttnr">Bytt merke</button>' : ''}
+    </div>
+    <h2>Flytt til annet kit</h2>
+    <div class="rad">
+      <select id="flytt" aria-label="Velg kit"><option value="">Løst utstyr (ingen kit)</option>
+        ${alleKit.map(k => `<option value="${k.id}" ${k.id === e.kit_id ? 'selected' : ''}>${esc(k.navn)}</option>`).join('')}
+      </select>
+      <button class="knapp" data-h="flytt">Flytt</button>
+    </div>
+    <h2>Historikk</h2>
+    <ul class="logg gruppe">${logg.map(h => `
+      <li><b>${HENDELSE[h.type] || esc(h.type)}</b>${h.kommentar ? ': ' + esc(h.kommentar) : ''}
+        <div class="sub">${datoTid(h.tid)}${h.bruker ? ', ' + esc(h.bruker) : ''}</div></li>`).join('') || '<li>Ingen hendelser ennå.</li>'}
+    </ul>`;
+
+      async function settStatus(status, type) {
+        const kommentar = prompt('Kommentar (valgfritt)');
+        if (kommentar === null) return;
+        try {
+          await db(sb.from('enhet').update({ status }).eq('id', id));
+          await db(sb.from('hendelse').insert({ enhet_id: id, kit_id: e.kit_id, type, kommentar: kommentar.trim() || null }));
+          vis();
+        } catch (err) { beskjed(feiltekst(err)); }
+      }
+      handlinger = {
+        defekt: () => settStatus('defekt', 'defekt'),
+        mangler: () => settStatus('mangler', 'mangler'),
+        iorden: () => settStatus(laan ? 'utlaant' : 'tilgjengelig', e.status === 'defekt' ? 'reparert' : 'funnet'),
+        kommentar: async () => {
+          const k = prompt('Kommentar');
+          if (!k || !k.trim()) return;
+          try { await db(sb.from('hendelse').insert({ enhet_id: id, kit_id: e.kit_id, type: 'kommentar', kommentar: k.trim() })); vis(); }
+          catch (err) { beskjed(feiltekst(err)); }
+        },
+        nyttnr: () => aapneSkanner({
+          tittel: 'Skann det nye merket',
+          vedKode: async kode => {
+            if (!/^\d{5}$/.test(kode)) { beskjed('Nummeret skal ha fem sifre.'); return; }
+            try {
+              await db(sb.from('enhet').update({ merke_nummer: kode }).eq('id', id));
+              await db(sb.from('hendelse').insert({ enhet_id: id, kit_id: e.kit_id, type: 'kommentar', kommentar: `Nytt merke: ${e.merke_nummer} er byttet til ${kode}` }));
+              beskjed(`Merket er byttet til ${kode}.`); vis();
+            } catch (err) { beskjed(feiltekst(err)); }
+          }
+        }),
+        flytt: async () => {
+          const til = document.getElementById('flytt').value || null;
+          if (til === e.kit_id) return;
+          if (e.status === 'utlaant') { beskjed('Utstyret er ute. Lever inn kitet før du flytter det.'); return; }
+          const navn = i => (alleKit.find(k => k.id === i) || { navn: 'løst utstyr' }).navn;
+          try {
+            await db(sb.from('enhet').update({ kit_id: til }).eq('id', id));
+            await db(sb.from('enhet').update({ kit_id: til }).eq('forelder_enhet_id', id));   // SIM-kort følger med
+            await db(sb.from('hendelse').insert({ enhet_id: id, kit_id: til, type: 'flyttet', kommentar: `Fra ${navn(e.kit_id)} til ${navn(til)}` }));
+            beskjed(`Flyttet til ${navn(til)}.`); vis();
+          } catch (err) { beskjed(feiltekst(err)); }
+        }
+      };
+    }
+
+    // ---------- Ruting ----------
+    let visNr_ = 0;
+    async function vis() {
+      const denne = ++visNr_;
+      lukkLag();
+      loggutKnapp.hidden = !okt;
+      if (!okt) { visInnlogging(); return; }
+      const [side, id] = location.hash.slice(1).split('/');
+      try {
+        if (side === 'kit' && id) await visKit(id);
+        else if (side === 'ut' && id) await visUt(id);
+        else if (side === 'inn' && id) await visInn(id);
+        else if (side === 'enhet' && id) await visEnhet(id);
+        else await visForside();
+        if (denne === visNr_) window.scrollTo(0, 0);
+      } catch (err) {
+        handlinger = {};
+        app.innerHTML = `<a class="tilbake" href="#">Alle kit</a><h1>Kunne ikke hente data</h1><p>${esc(feiltekst(err))}</p>`;
+      }
+    }
+
+    function start() {
+      if (SUPABASE_URL.includes('DITT-PROSJEKT') || SUPABASE_KEY.includes('LIM-INN')) {
+        app.innerHTML = '<h1>Appen er ikke koblet til Supabase</h1><p>Åpne index.html og lim inn Project URL og anon-nøkkelen øverst i skriptet.</p>';
+        return;
+      }
+      if (!window.supabase) {
+        app.innerHTML = '<h1>Kunne ikke laste appen</h1><p>Sjekk nettforbindelsen og last siden på nytt.</p>';
+        return;
+      }
+      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      let forrigeBruker;
+      sb.auth.onAuthStateChange((_hendelse, s) => {
+        okt = s;
+        const bruker = s ? s.user.id : null;
+        // Ikke tegn på nytt ved fornyet token. setTimeout: Supabase tåler ikke databasekall inne i denne funksjonen.
+        if (bruker !== forrigeBruker) { forrigeBruker = bruker; setTimeout(vis, 0); }
+      });
+      window.addEventListener('hashchange', vis);
+    }
+    start();
+  </script>
+</body>
+
+</html>
